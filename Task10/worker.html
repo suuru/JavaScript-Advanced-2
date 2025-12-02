@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fibonacci Web Worker</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 2.5rem;
+      text-align: center;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 1.1rem;
+    }
+
+    .info-box {
+      background: #e8f4f8;
+      border-left: 4px solid #4a90e2;
+      padding: 15px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+    }
+
+    .info-box h3 {
+      color: #4a90e2;
+      margin-bottom: 8px;
+    }
+
+    .info-box ul {
+      margin-left: 20px;
+      color: #555;
+    }
+
+    .input-section {
+      background: #f8f9fa;
+      padding: 25px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 15px;
+      align-items: flex-end;
+    }
+
+    input[type="number"] {
+      flex: 1;
+      padding: 15px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      transition: border-color 0.3s;
+    }
+
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .hint {
+      color: #666;
+      font-size: 0.9rem;
+      margin-top: 8px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    button {
+      flex: 1;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-worker {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-worker:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-main {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+    }
+
+    .btn-main:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(245, 87, 108, 0.3);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .result-section {
+      margin-top: 30px;
+      padding: 25px;
+      border-radius: 12px;
+      display: none;
+    }
+
+    .result-section.show {
+      display: block;
+    }
+
+    .result-success {
+      background: #d4edda;
+      border: 2px solid #28a745;
+    }
+
+    .result-error {
+      background: #f8d7da;
+      border: 2px solid #dc3545;
+    }
+
+    .result-title {
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .result-success .result-title {
+      color: #155724;
+    }
+
+    .result-error .result-title {
+      color: #721c24;
+    }
+
+    .result-item {
+      background: white;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .result-label {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .result-value {
+      font-family: 'Courier New', monospace;
+      font-size: 1.1rem;
+      color: #667eea;
+      font-weight: bold;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+
+    .badge-worker {
+      background: #667eea;
+      color: white;
+    }
+
+    .badge-main {
+      background: #f5576c;
+      color: white;
+    }
+
+    .warning-box {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      color: #856404;
+    }
+
+    .warning-box strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .code-section {
+      margin-top: 30px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+
+    .code-section h3 {
+      color: #4ec9b0;
+      margin-bottom: 15px;
+    }
+
+    pre {
+      margin: 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .comparison-table {
+      width: 100%;
+      margin-top: 30px;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .comparison-table th {
+      background: #667eea;
+      color: white;
+      padding: 15px;
+      text-align: left;
+    }
+
+    .comparison-table td {
+      padding: 15px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .comparison-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .icon {
+      width: 24px;
+      height: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧮 Fibonacci Web Worker</h1>
+    <p class="subtitle">Calculate large Fibonacci numbers without blocking the UI</p>
+
+    <div class="info-box">
+      <h3>📚 What is a Web Worker?</h3>
+      <ul>
+        <li>Runs JavaScript in a separate thread (background)</li>
+        <li>Prevents UI from freezing during heavy calculations</li>
+        <li>Perfect for CPU-intensive tasks like Fibonacci</li>
+        <li>Communicates with main thread via messages</li>
+      </ul>
+    </div>
+
+    <div class="input-section">
+      <label for="fibNumber">Enter Fibonacci Number to Calculate:</label>
+      <div class="input-group">
+        <input 
+          type="number" 
+          id="fibNumber" 
+          min="1" 
+          max="45" 
+          value="40"
+          placeholder="Enter number (1-45)"
+        >
+      </div>
+      <p class="hint">💡 Try 40-42 for noticeable computation time. Warning: 43+ will take very long!</p>
+
+      <div class="button-group">
+        <button class="btn-worker" onclick="calculateWithWorker()">
+          <span>⚡</span>
+          <span id="workerBtnText">Calculate with Worker</span>
+          <div class="spinner" id="workerSpinner" style="display: none;"></div>
+        </button>
+
+        <button class="btn-main" onclick="calculateWithMain()">
+          <span>🐌</span>
+          <span id="mainBtnText">Calculate on Main Thread</span>
+          <div class="spinner" id="mainSpinner" style="display: none;"></div>
+        </button>
+      </div>
+    </div>
+
+    <div id="resultSection" class="result-section">
+      <div class="result-title">
+        <span id="resultIcon"></span>
+        <span id="resultTitleText"></span>
+        <span id="resultBadge" class="badge"></span>
+      </div>
+      <div id="resultContent"></div>
+    </div>
+
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Web Worker</th>
+          <th>Main Thread</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>UI Responsiveness</strong></td>
+          <td>✅ UI stays responsive</td>
+          <td>❌ UI freezes during calculation</td>
+        </tr>
+        <tr>
+          <td><strong>User Experience</strong></td>
+          <td>✅ Can interact with page</td>
+          <td>❌ Page becomes unresponsive</td>
+        </tr>
+        <tr>
+          <td><strong>Performance</strong></td>
+          <td>✅ Runs in separate thread</td>
+          <td>⚠️ Blocks main thread</td>
+        </tr>
+        <tr>
+          <td><strong>Best For</strong></td>
+          <td>✅ Heavy computations</td>
+          <td>⚠️ Quick operations only</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="code-section">
+      <h3>📝 Worker Code (worker.js)</h3>
+      <pre>
+// Fibonacci calculation function
+function fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+// Listen for messages from main thread
+self.onmessage = function(event) {
+  const n = event.data;
+  const startTime = performance.now();
+  
+  // Calculate Fibonacci
+  const result = fibonacci(n);
+  
+  const endTime = performance.now();
+  const duration = endTime - startTime;
+  
+  // Send result back to main thread
+  self.postMessage({
+    input: n,
+    result: result,
+    duration: duration
+  });
+};</pre>
+    </div>
+
+    <div class="code-section">
+      <h3>📝 Main Thread Code (index.html)</h3>
+      <pre>
+// Create worker from inline code
+const workerCode = `/* worker code here */`;
+const blob = new Blob([workerCode], { type: 'application/javascript' });
+const workerUrl = URL.createObjectURL(blob);
+const worker = new Worker(workerUrl);
+
+// Send data to worker
+worker.postMessage(42);
+
+// Receive result from worker
+worker.onmessage = function(event) {
+  console.log('Result:', event.data);
+  worker.terminate(); // Clean up
+  URL.revokeObjectURL(workerUrl);
+};</pre>
+    </div>
+  </div>
+
+  <script>
+    let currentWorker = null;
+    let isCalculating = false;
+
+    // Fibonacci function
+    function fibonacci(n) {
+      if (n <= 1) return n;
+      return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+
+    // Calculate with Web Worker
+    function calculateWithWorker() {
+      if (isCalculating) return;
+      
+      const input = document.getElementById('fibNumber');
+      const n = parseInt(input.value);
+      
+      if (isNaN(n) || n < 1 || n > 45) {
+        showError('Please enter a number between 1 and 45');
+        return;
+      }
+
+      isCalculating = true;
+      setButtonLoading('worker', true);
+      hideResult();
+
+      const startTime = performance.now();
+
+      // Create Web Worker from inline code
+      const workerCode = `
+        function fibonacci(n) {
+          if (n <= 1) return n;
+          return fibonacci(n - 1) + fibonacci(n - 2);
+        }
+
+        self.onmessage = function(event) {
+          const n = event.data;
+          const result = fibonacci(n);
+          self.postMessage({
+            input: n,
+            result: result
+          });
+        };
+      `;
+
+      const blob = new Blob([workerCode], { type: 'application/javascript' });
+      const workerUrl = URL.createObjectURL(blob);
+      currentWorker = new Worker(workerUrl);
+
+      // Listen for result
+      currentWorker.onmessage = function(event) {
+        const endTime = performance.now();
+        const duration = (endTime - startTime).toFixed(2);
+        
+        showResult({
+          ...event.data,
+          duration: duration,
+          type: 'worker'
+        });
+
+        // Clean up
+        currentWorker.terminate();
+        URL.revokeObjectURL(workerUrl);
+        currentWorker = null;
+        isCalculating = false;
+        setButtonLoading('worker', false);
+      };
+
+      // Handle errors
+      currentWorker.onerror = function(error) {
+        showError('Worker error: ' + error.message);
+        currentWorker.terminate();
+        URL.revokeObjectURL(workerUrl);
+        currentWorker = null;
+        isCalculating = false;
+        setButtonLoading('worker', false);
+      };
+
+      // Send message to worker
+      currentWorker.postMessage(n);
+    }
+
+    // Calculate on Main Thread
+    function calculateWithMain() {
+      if (isCalculating) return;
+      
+      const input = document.getElementById('fibNumber');
+      const n = parseInt(input.value);
+      
+      if (isNaN(n) || n < 1 || n > 45) {
+        showError('Please enter a number between 1 and 45');
+        return;
+      }
+
+      isCalculating = true;
+      setButtonLoading('main', true);
+      hideResult();
+
+      const startTime = performance.now();
+
+      // Use setTimeout to allow UI to update before blocking
+      setTimeout(() => {
+        const result = fibonacci(n);
+        const endTime = performance.now();
+        const duration = (endTime - startTime).toFixed(2);
+
+        showResult({
+          input: n,
+          result: result,
+          duration: duration,
+          type: 'main'
+        });
+
+        isCalculating = false;
+        setButtonLoading('main', false);
+      }, 100);
+    }
+
+    // Show result
+    function showResult(data) {
+      const section = document.getElementById('resultSection');
+      const icon = document.getElementById('resultIcon');
+      const title = document.getElementById('resultTitleText');
+      const badge = document.getElementById('resultBadge');
+      const content = document.getElementById('resultContent');
+
+      section.className = 'result-section result-success show';
+      icon.textContent = '✅';
+      title.textContent = 'Calculation Complete!';
+      
+      if (data.type === 'worker') {
+        badge.textContent = 'Web Worker';
+        badge.className = 'badge badge-worker';
+      } else {
+        badge.textContent = 'Main Thread';
+        badge.className = 'badge badge-main';
+      }
+
+      content.innerHTML = `
+        <div class="result-item">
+          <span class="result-label">Input:</span>
+          <span class="result-value">fibonacci(${data.input})</span>
+        </div>
+        <div class="result-item">
+          <span class="result-label">Result:</span>
+          <span class="result-value">${data.result.toLocaleString()}</span>
+        </div>
+        <div class="result-item">
+          <span class="result-label">Duration:</span>
+          <span class="result-value">${data.duration} ms</span>
+        </div>
+        ${data.type === 'main' ? `
+          <div class="warning-box">
+            <strong>⚠️ UI Blocking Notice</strong>
+            During calculation, the page was unresponsive. Try clicking buttons or selecting text - everything was frozen!
+          </div>
+        ` : `
+          <div class="warning-box" style="background: #d4edda; border-color: #28a745; color: #155724;">
+            <strong>✅ UI Remained Responsive!</strong>
+            During calculation, the page stayed responsive. You could interact with the UI without any freezing!
+          </div>
+        `}
+      `;
+    }
+
+    // Show error
+    function showError(message) {
+      const section = document.getElementById('resultSection');
+      const icon = document.getElementById('resultIcon');
+      const title = document.getElementById('resultTitleText');
+      const badge = document.getElementById('resultBadge');
+      const content = document.getElementById('resultContent');
+
+      section.className = 'result-section result-error show';
+      icon.textContent = '❌';
+      title.textContent = 'Error';
+      badge.style.display = 'none';
+
+      content.innerHTML = `
+        <div class="result-item">
+          <span class="result-value" style="color: #dc3545;">${message}</span>
+        </div>
+      `;
+    }
+
+    // Hide result
+    function hideResult() {
+      const section = document.getElementById('resultSection');
+      section.classList.remove('show');
+    }
+
+    // Set button loading state
+    function setButtonLoading(type, loading) {
+      if (type === 'worker') {
+        const btn = document.querySelector('.btn-worker');
+        const text = document.getElementById('workerBtnText');
+        const spinner = document.getElementById('workerSpinner');
+        
+        btn.disabled = loading || isCalculating;
+        text.textContent = loading ? 'Calculating...' : 'Calculate with Worker';
+        spinner.style.display = loading ? 'block' : 'none';
+      } else {
+        const btn = document.querySelector('.btn-main');
+        const text = document.getElementById('mainBtnText');
+        const spinner = document.getElementById('mainSpinner');
+        
+        btn.disabled = loading || isCalculating;
+        text.textContent = loading ? 'Calculating...' : 'Calculate on Main Thread';
+        spinner.style.display = loading ? 'block' : 'none';
+      }
+    }
+
+    // Update both buttons when calculating
+    setInterval(() => {
+      document.querySelector('.btn-worker').disabled = isCalculating;
+      document.querySelector('.btn-main').disabled = isCalculating;
+    }, 100);
+  </script>
+</body>
+</html>
